@@ -48,8 +48,10 @@ const userPost = async (req = request, res) => {
 
 const userDelete = async (req, res) => {
 	const { id } = req.params;
-	await User.findByIdAndUpdate(id, { state: false });
-	res.status(403).json({});
+
+	const user = await User.findByIdAndUpdate(id, { state: false });
+
+	res.status(403).json({ user });
 };
 
 module.exports = {

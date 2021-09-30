@@ -1,3 +1,4 @@
+const { userGet } = require("../controllers/user");
 const Role = require("../models/role");
 const User = require("../models/user");
 
@@ -13,7 +14,6 @@ const emailValidation = async (email) => {
 		throw new Error("El email ya se encuentra registrado");
 	}
 };
-
 const idValidation = async (_id) => {
 	const existsId = await User.findById(_id);
 	if (!existsId) {
@@ -21,4 +21,8 @@ const idValidation = async (_id) => {
 	}
 };
 
-module.exports = { roleValidation, emailValidation, idValidation };
+module.exports = {
+	roleValidation,
+	emailValidation,
+	idValidation,
+};

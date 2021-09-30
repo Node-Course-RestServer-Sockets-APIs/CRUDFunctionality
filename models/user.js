@@ -1,4 +1,3 @@
-const { response } = require("express");
 const { Schema, model } = require("mongoose");
 
 const UserSchema = Schema({
@@ -34,8 +33,9 @@ const UserSchema = Schema({
 });
 
 UserSchema.methods.toJSON = function () {
-	const { password, __v, ...rest } = this.toObject();
-	return rest;
+	const { password, _id, __v, ...user } = this.toObject();
+	user.uid = _id;
+	return user;
 };
 
 module.exports = model("User", UserSchema);
