@@ -3,6 +3,7 @@ const bcryptjs = require("bcryptjs");
 
 const { generarJWT } = require("../helpers/tokens");
 const User = require("../models/user");
+const { googleVerify } = require("../helpers/google_verify");
 
 const authGet = async (req = request, res = response) => {
 	const { password, email } = req.body;
@@ -26,8 +27,43 @@ const authGet = async (req = request, res = response) => {
 	}
 };
 
-const authPut = (req, res) => {};
-const authPost = (req, res) => {};
-const authDelete = (req, res) => {};
+const authGoogle = async (req, res, next) => {
+	const { id_token } = req.body;
+	try {
+		const googleUser = await googleVerify(id_token);
+		const { picture, name, email } = googleUser;
+		let user = await User.findOne({ email });
+		if (!user) {
+			//crear usuario
+			const data = {
+				name,
+				email,
+				password: "<3",
+				picture,
+				googleSignUp: true,
+				role: "USER_ROLE",
+			};
+			user = new User(data);
+			await user.save();
+		}
 
-module.exports = { authGet, authPut, authPost, authDelete };
+		//Ingresar con los datos
+		//Reject if state false in DB
+		if (!user.state) {
+			return res
+				.status(401)
+				.json({ msg: "Blocked Account, talk to an administrator." });
+		}
+		//Generar Token de JWT
+		const token = await generarJWT(user.id);
+		return res.status(200).json({
+			user,
+			token,
+		});
+	} catch (error) {
+		console.log(error);
+		res.status(400).json({ msg: "Unverified google token" });
+	}
+};
+
+module.exports = { authGet, authGoogle };
