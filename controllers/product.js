@@ -1,11 +1,12 @@
 const { request, response } = require("express");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
+const Product = require("../models/product");
 
-const productsGetAll = async (req = request, res = response, next) => {
+const productGetAll = async (req = request, res = response, next) => {
 	const { limit = "5", from = "0" } = req.query;
 	const [results, categories] = await Promise.all([
-		Category.countDocuments({ state: true }),
+		Product.countDocuments({ state: true }),
 		Category.find({ state: true })
 			.populate("user")
 			.limit(parseInt(limit))
@@ -14,7 +15,7 @@ const productsGetAll = async (req = request, res = response, next) => {
 	res.status(200).json({ results, categories });
 };
 
-const productsGetOne = async (req = request, res = response, next) => {
+const productGetOne = async (req = request, res = response, next) => {
 	//Search for the category and data of the last user that modified this
 	const category = await Category.findById(req.params.id).populate(
 		"user",
@@ -23,7 +24,7 @@ const productsGetOne = async (req = request, res = response, next) => {
 	res.json(category);
 };
 
-const productsPost = async (req = request, res = response, next) => {
+const productPost = async (req = request, res = response, next) => {
 	const name = req.body.name.toUpperCase();
 
 	const categoryDB = await Category.findOne({ name });
@@ -44,7 +45,7 @@ const productsPost = async (req = request, res = response, next) => {
 	res.status(201).json({ msg: "POST - Product", category });
 };
 
-const productsPut = async (req = request, res = response, next) => {
+const productPut = async (req = request, res = response, next) => {
 	let { state, user, ...data } = req.body;
 	const { id } = req.params;
 	//Search user that is doing the change
@@ -62,7 +63,7 @@ const productsPut = async (req = request, res = response, next) => {
 	res.json({ updatedCategory, as });
 };
 
-const productsDelete = async (req = request, res = response, next) => {
+const productDelete = async (req = request, res = response, next) => {
 	const { id } = req.params;
 
 	const token = req.header("xToken");

@@ -1,12 +1,25 @@
 const { Router } = require("express");
 const { check } = require("express-validator");
+const {
+	categoriesGetOne,
+	categoriesPost,
+	categoriesPut,
+	categoriesDelete,
+} = require("../controllers/categories");
+const { productGetAll } = require("../controllers/product");
+const { categoryExists } = require("../helpers/db_validation");
+const { validarCampos, jwt_validation, hasRole } = require("../middlewares");
+const {
+	categoryNameExists,
+	nameToUpperCase,
+} = require("../middlewares/categoriesValidation");
 
 const router = new Router();
 
 // {{url}}/api/products
 
 //Get all the Products - Public
-router.get("/", [validarCampos], categoriesGetAll);
+router.get("/", [validarCampos], productGetAll);
 
 //Get one Product - Public
 router.get(

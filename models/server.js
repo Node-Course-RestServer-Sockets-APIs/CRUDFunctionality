@@ -7,10 +7,10 @@ class Server {
 		this.app = express();
 		this.port = process.env.PORT;
 
-		this.userPath = "/api/user.js";
-		this.authPath = "/api/auth.js";
-		this.productPath = "/api/product.js";
-		this.categoryPath = "/api/category.js";
+		this.userPath = "/api/user";
+		this.authPath = "/api/auth";
+		this.productPath = "/api/product";
+		this.categoryPath = "/api/category";
 
 		//Connection to DB
 		this.database();
