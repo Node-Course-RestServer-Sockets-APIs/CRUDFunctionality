@@ -2,87 +2,106 @@ const { request, response } = require("express");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const Product = require("../models/product");
+const Category = require("../models/category");
+const { categoryExists } = require("../helpers/db_validation");
 
 const productGetAll = async (req = request, res = response, next) => {
 	const { limit = "5", from = "0" } = req.query;
-	const [results, categories] = await Promise.all([
+	const [results, products] = await Promise.all([
 		Product.countDocuments({ state: true }),
-		Category.find({ state: true })
-			.populate("user")
+		Product.find({ state: true })
+			.populate("user category", "name user")
 			.limit(parseInt(limit))
 			.skip(parseInt(from)),
 	]);
-	res.status(200).json({ results, categories });
+	res.status(200).json({ results, products });
 };
 
 const productGetOne = async (req = request, res = response, next) => {
-	//Search for the category and data of the last user that modified this
-	const category = await Category.findById(req.params.id).populate(
-		"user",
+	//Search for the product and data of the last user that modified this
+	const product = await Product.findById(req.params.id).populate(
+		"user category",
 		"name"
 	);
-	res.json(category);
+	res.json({ msg: "GET - Product", product });
 };
 
 const productPost = async (req = request, res = response, next) => {
-	const name = req.body.name.toUpperCase();
+	const { name, category, description, price } = req.body;
+	const categoryName = category.toUpperCase();
 
-	const categoryDB = await Category.findOne({ name });
+	const productDB = await Product.findOne({ name });
 	//Validate Inexistens
-	if (categoryDB) {
-		return res
-			.status(400)
-			.json({ msg: `1Category ${name} is already created.` });
+	if (productDB) {
+		return res.status(400).json({ msg: `Product ${name} is already created.` });
+	}
+	//Search Category
+	const categoryDB = await Category.findOne({
+		name: categoryName,
+		state: true,
+	});
+	if (!categoryDB) {
+		return res.status(200).json({ msg: `Category ${category} is not valid.` });
 	}
 	//Select data for the new Instance
-	const data = { name, user: req.user._id };
+	const data = {
+		name,
+		description,
+		price,
+		user: req.user._id,
+		category: categoryDB._id,
+	};
 
 	//Create Instance
-	const category = new Category(data);
+	const product = new Product(data);
 	//Save on DB
-	await category.save();
+	await product.save();
 
-	res.status(201).json({ msg: "POST - Product", category });
+	res.status(201).json({ msg: "POST - Product", product });
 };
 
 const productPut = async (req = request, res = response, next) => {
-	let { state, user, ...data } = req.body;
+	//Destructurate request
+	let { state, user, name, _id, category, price, ...data } = req.body;
 	const { id } = req.params;
-	//Search user that is doing the change
-	const token = req.header("xToken");
-	const { uid } = jwt.decode(token);
-	const newUser = mongoose.Types.ObjectId(uid);
-	//Update category
-	data.user = newUser;
-	const categoryResult = await Category.findByIdAndUpdate(id, data, {
+
+	//Set the new data for the product
+	if (price > 0) data.price = price;
+	data.user = req.user._id;
+	if (category) {
+		const upperCaseCategory = category.toUpperCase();
+		const categoryDB = await Category.findOne({
+			name: upperCaseCategory,
+			state: true,
+		});
+		if (categoryDB) data.category = categoryDB._id;
+	}
+
+	//Update product
+	const productResult = await Product.findByIdAndUpdate(id, data, {
 		new: true,
 	});
+
 	//Populate Result
-	const updatedCategory = await categoryResult.populate("user", "name");
-	const as = req.user;
-	res.json({ updatedCategory, as });
+	const updatedProduct = await productResult.populate("user category", "name");
+
+	//Send response
+	res.json({ msg: "PUT - Product", updatedProduct });
 };
 
 const productDelete = async (req = request, res = response, next) => {
 	const { id } = req.params;
 
-	const token = req.header("xToken");
-	const { uid } = jwt.decode(token);
-	const newUser = mongoose.Types.ObjectId(uid);
-
-	const categoryResult = await Category.findByIdAndUpdate(
+	const productResult = await Product.findByIdAndUpdate(
 		id,
 		{
 			state: false,
-			user: newUser,
+			user: req.user._id,
 		},
 		{ new: true }
 	);
-	if (!categoryResult) {
-		return res.status(400).json({ msg: "Category not founded." });
-	}
-	const deletedCategory = await categoryResult.populate("user", "name");
-	res.json({ deletedCategory });
+	const deletedProduct = await productResult.populate("user category", "name");
+	res.json({ msg: "DELETE - Product", deletedProduct });
 };
 
 module.exports = {

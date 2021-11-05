@@ -1,71 +1,81 @@
 const { Router } = require("express");
 const { check } = require("express-validator");
+
 const {
-	categoriesGetOne,
-	categoriesPost,
-	categoriesPut,
-	categoriesDelete,
-} = require("../controllers/categories");
-const { productGetAll } = require("../controllers/product");
-const { categoryExists } = require("../helpers/db_validation");
-const { validarCampos, jwt_validation, hasRole } = require("../middlewares");
+	productGetAll,
+	productGetOne,
+	productPost,
+	productPut,
+	productDelete,
+} = require("../controllers/product");
+const { productExists, categoryExists } = require("../helpers/db_validation");
 const {
-	categoryNameExists,
+	validarCampos,
+	jwt_validation,
+	hasRole,
 	nameToUpperCase,
-} = require("../middlewares/categoriesValidation");
+} = require("../middlewares");
+const { categoryNameExists } = require("../middlewares/categoriesValidation");
 
 const router = new Router();
 
 // {{url}}/api/products
 
 //Get all the Products - Public
-router.get("/", [validarCampos], productGetAll);
+router.get("/", [jwt_validation, validarCampos], productGetAll);
 
 //Get one Product - Public
 router.get(
 	"/:id",
 	[
+		jwt_validation,
 		check("id", "Invlid ID").isMongoId(),
-		check("id").custom(categoryExists),
+		check("id").custom(productExists),
 		validarCampos,
 	],
-	categoriesGetOne
+	productGetOne
 );
 
 //Create a new Product - Private - Token Valido
 router.post(
 	"/",
-	[jwt_validation, check("name").not().isEmpty(), validarCampos],
-	categoriesPost
+	[
+		jwt_validation,
+		hasRole("ADMIN_ROLE", "SALE_ROLE"),
+		check("name").not().isEmpty(),
+		check("description").not().isEmpty(),
+		check("price").isNumeric(),
+		validarCampos,
+		nameToUpperCase,
+	],
+	productPost
 );
 
 //Update one Product - Private - Token Valido
 router.put(
 	"/:id",
-	nameToUpperCase,
-
-	check("id", "Invlid ID").isMongoId(),
-	jwt_validation,
-	hasRole("ADMIN_ROLE", "SALE_ROLE"),
-	check("name").not().isEmpty(),
-	check("name").custom(categoryNameExists),
-	check("id").custom(categoryExists),
-	validarCampos,
-
-	categoriesPut
+	[
+		jwt_validation,
+		hasRole("ADMIN_ROLE", "SALE_ROLE"),
+		check("id", "Invlid ID").isMongoId(),
+		check("id").custom(productExists),
+		check("price", "Price required, insert 0 to not change it.").isNumeric(),
+		validarCampos,
+	],
+	productPut
 );
 
 //Delete Product - Admin -
 router.delete(
 	"/:id",
 	[
-		check("id", "Invlid ID").isMongoId(),
 		jwt_validation,
-		check("id").custom(categoryExists),
 		hasRole("ADMIN_ROLE"),
+		check("id", "Invlid ID").isMongoId(),
+		check("id").custom(productExists),
 		validarCampos,
 	],
-	categoriesDelete
+	productDelete
 );
 
 module.exports = router;

@@ -8,11 +8,14 @@ const {
 	categoriesDelete,
 } = require("../controllers/categories");
 const { categoryExists } = require("../helpers/db_validation");
-const { jwt_validation, hasRole, validarCampos } = require("../middlewares");
+
 const {
-	categoryNameExists,
+	jwt_validation,
+	hasRole,
+	validarCampos,
 	nameToUpperCase,
-} = require("../middlewares/categoriesValidation");
+} = require("../middlewares");
+const { categoryNameExists } = require("../middlewares/categoriesValidation");
 
 const router = new Router();
 
@@ -42,15 +45,17 @@ router.post(
 //Update one Category - Private - Token Valido
 router.put(
 	"/:id",
-	nameToUpperCase,
-
-	check("id", "Invlid ID").isMongoId(),
-	jwt_validation,
-	hasRole("ADMIN_ROLE", "SALE_ROLE"),
-	check("name").not().isEmpty(),
-	check("name").custom(categoryNameExists),
-	check("id").custom(categoryExists),
-	validarCampos,
+	[
+		jwt_validation,
+		hasRole("ADMIN_ROLE", "SALE_ROLE"),
+		check("id", "Invlid ID").isMongoId(),
+		check("name").not().isEmpty(),
+		check("id").custom(categoryExists),
+		validarCampos,
+		nameToUpperCase,
+		check("name").custom(categoryNameExists),
+		validarCampos,
+	],
 
 	categoriesPut
 );
