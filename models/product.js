@@ -33,6 +33,7 @@ const ProductSchema = new Schema({
 
 		default: true,
 	},
+	img: { type: String },
 });
 
 ProductSchema.methods.toJSON = function () {
