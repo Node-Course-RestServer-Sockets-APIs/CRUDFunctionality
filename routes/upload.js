@@ -4,6 +4,7 @@ const {
 	postFile,
 	putCollectionFile,
 	getCollectionFile,
+	putCollectionFileCloudinary,
 } = require("../controllers/uploads");
 const { hasFiles } = require("../helpers/uploadFile");
 const { validarCampos } = require("../middlewares");
@@ -22,8 +23,9 @@ router.put(
 			isAllowedCollection(collection, ["users", "products"])
 		),
 		validarCampos,
-	],
-	putCollectionFile
+	]
+	// putCollectionFileCloudinary
+	// putCollectionFile
 );
 
 router.get(
